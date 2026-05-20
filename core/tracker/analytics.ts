@@ -42,9 +42,9 @@ export function getBySource(db: Database.Database): SourceMetric[] {
   const rows = db
     .prepare(
       `SELECT
-         source,
-         COUNT(*) AS count,
-         SUM(CASE WHEN status IN ('interviewing','offer','rejected') THEN 1 ELSE 0 END) AS responded,
+         jp.source AS source,
+         COUNT(DISTINCT jp.id) AS count,
+         COUNT(DISTINCT CASE WHEN jp.status IN ('interviewing','offer','rejected') THEN jp.id END) AS responded,
          AVG(
            CASE
              WHEN jp.first_response_at IS NOT NULL AND a.applied_at IS NOT NULL
@@ -54,7 +54,8 @@ export function getBySource(db: Database.Database): SourceMetric[] {
          ) AS avg_days
        FROM job_postings jp
        LEFT JOIN applications a ON a.posting_id = jp.id
-       GROUP BY source`,
+       WHERE jp.status IN ('applied','interviewing','offer','rejected','ghosted')
+       GROUP BY jp.source`,
     )
     .all() as { source: string; count: number; responded: number; avg_days: number | null }[]
 

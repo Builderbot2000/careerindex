@@ -146,7 +146,7 @@ export default function Analytics(): React.ReactElement {
                     <thead>
                         <tr style={{ borderBottom: '2px solid #e5e7eb', textAlign: 'left' }}>
                             <th style={{ padding: '6px 12px 6px 0', fontWeight: 600, color: '#374151' }}>Source</th>
-                            <th style={{ padding: '6px 12px 6px 0', fontWeight: 600, color: '#374151' }}>Postings</th>
+                            <th style={{ padding: '6px 12px 6px 0', fontWeight: 600, color: '#374151' }}>Applications</th>
                             <th style={{ padding: '6px 12px 6px 0', fontWeight: 600, color: '#374151' }}>Response Rate</th>
                             <th style={{ padding: '6px 0', fontWeight: 600, color: '#374151' }}>Avg Days to Response</th>
                         </tr>

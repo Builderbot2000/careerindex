@@ -25,6 +25,14 @@ test.describe('Analytics Module', () => {
 
   test('by-source table shows the mock adapter as a row', async ({ page }) => {
     await runAndCommitScrape(page)
+
+    // Advance one mock posting to applied so it appears in the By Source table,
+    // which now filters to applied+ statuses.
+    await goTo(page, 'Jobs')
+    await page.locator('select').first().selectOption('favorited')
+    await goTo(page, 'Tracker')
+    await page.locator('table tbody tr').first().locator('select').selectOption('applied')
+
     await goTo(page, 'Analytics')
     await expect(page.getByText(/mock/i)).toBeVisible({ timeout: 5_000 })
   })
