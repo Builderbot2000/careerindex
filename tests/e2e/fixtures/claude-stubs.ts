@@ -83,6 +83,7 @@ export function stubAffinityScore(postingId: string): {
   nice_to_haves_class: 'partially_met'
   affinity_score: number
   reasoning: string
+  description_snippet: string
 } {
   return {
     posting_id: postingId,
@@ -90,5 +91,6 @@ export function stubAffinityScore(postingId: string): {
     nice_to_haves_class: 'partially_met',
     affinity_score: 0.875, // 0.75 * 1.0 + 0.25 * 0.5
     reasoning: 'Strong match on backend systems experience and required tech stack.',
+    description_snippet: 'Acme Corp is hiring a Senior Backend Engineer to build distributed systems that process millions of events per day.',
   }
 }

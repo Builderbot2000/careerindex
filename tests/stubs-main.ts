@@ -99,13 +99,13 @@ export function registerTestStubs(): void {
       const now = new Date().toISOString()
       const update = db.prepare(
         `UPDATE job_postings
-         SET affinity_score = ?, affinity_reasoning = ?, affinity_scored_at = ?,
+         SET affinity_score = ?, affinity_reasoning = ?, description_snippet = ?, affinity_scored_at = ?,
              affinity_skipped = 0, hard_reqs_class = ?, nice_to_haves_class = ?
          WHERE id = ?`,
       )
       for (const { id } of unscored) {
         const scored = stubAffinityScore(id)
-        update.run(scored.affinity_score, scored.reasoning, now, scored.hard_reqs_class, scored.nice_to_haves_class, id)
+        update.run(scored.affinity_score, scored.reasoning, scored.description_snippet, now, scored.hard_reqs_class, scored.nice_to_haves_class, id)
       }
     }
 

@@ -27,6 +27,7 @@ const BASE_FIELDS = {
   affinity_skipped: false,
   affinity_scored_at: null,
   affinity_reasoning: null,
+  description_snippet: null,
   hard_reqs_class: null,
   nice_to_haves_class: null,
   first_response_at: null,

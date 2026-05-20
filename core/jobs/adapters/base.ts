@@ -42,6 +42,7 @@ export const JobPostingSchema = z.object({
   affinity_skipped: z.boolean(),
   affinity_scored_at: z.string().nullable(),
   affinity_reasoning: z.string().nullable(),
+  description_snippet: z.string().nullable(),
   hard_reqs_class: z.enum(['overqualified', 'fully_qualified', 'minimally_qualified', 'underqualified']).nullable(),
   nice_to_haves_class: z.enum(['fully_met', 'partially_met', 'not_met']).nullable(),
   first_response_at: z.string().nullable(),
@@ -78,6 +79,7 @@ export interface JobPostingRow {
   affinity_skipped: number  // SQLite integer 0/1
   affinity_scored_at: string | null
   affinity_reasoning: string | null
+  description_snippet: string | null
   hard_reqs_class: string | null
   nice_to_haves_class: string | null
   first_response_at: string | null

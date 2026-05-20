@@ -400,12 +400,10 @@ export default function Tracker(): React.ReactElement {
                                     onClick={(e) => e.preventDefault()}
                                     style={{ textDecoration: 'none', color: 'inherit' }}
                                     onMouseEnter={(e) => {
-                                        if (!posting.raw_text) return
+                                        const snippet = posting.description_snippet
+                                        if (!snippet) return
                                         if (tooltipTimer.current) clearTimeout(tooltipTimer.current)
                                         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-                                        const snippet = posting.raw_text.length > 600
-                                            ? posting.raw_text.slice(0, 600) + '…'
-                                            : posting.raw_text
                                         setTooltip({ x: rect.left, y: rect.bottom + 6, text: snippet })
                                     }}
                                     onMouseLeave={() => {

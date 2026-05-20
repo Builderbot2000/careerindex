@@ -49,7 +49,10 @@ const AffinityResultSchema = z.object({
   ]),
   nice_to_haves_class: z.enum(['fully_met', 'partially_met', 'not_met']),
   reasoning: z.string(),
+  description_snippet: z.string(),
 })
+
+const MAX_SNIPPET_CHARS = 500
 
 type AffinityResult = z.infer<typeof AffinityResultSchema>
 
@@ -119,8 +122,17 @@ ${jobDescription.slice(0, 3000)}
   "salary_max": <maximum annual salary in USD as integer, or null if not stated>,
   "hard_reqs_class": "<overqualified|fully_qualified|minimally_qualified|underqualified>",
   "nice_to_haves_class": "<fully_met|partially_met|not_met>",
-  "reasoning": "<one sentence: key fit or gap>"
+  "reasoning": "<one sentence: key fit or gap>",
+  "description_snippet": "<see below>"
 }
+
+## description_snippet rules (strict)
+- Quote VERBATIM from the job description above. Do not paraphrase, summarize, translate, or reword in any way.
+- Pick the contiguous span that best answers "what is this role?" — typically the opening 1–3 sentences along the lines of "X is hiring a Y to do Z" or "We're looking for a Y to ...".
+- If no clean intro exists, take the first 1–3 sentences of the description verbatim.
+- Hard limit: ≤ 400 characters. If the natural span is longer, truncate at a sentence or word boundary and end with "…".
+- Strip HTML tags, bullet markers, and surrounding whitespace, but otherwise preserve the original wording exactly.
+- Never invent text that is not present in the description.
 
 ## Classification Guide
 
@@ -203,6 +215,7 @@ export async function scorePostings(
          affinity_scored_at  = @scored_at,
          affinity_skipped    = 0,
          affinity_reasoning  = @reasoning,
+         description_snippet = @description_snippet,
          hard_reqs_class     = @hard_reqs_class,
          nice_to_haves_class = @nice_to_haves_class,
          yoe_min             = @yoe_min,
@@ -225,7 +238,7 @@ export async function scorePostings(
       const response = await withQuotaGuard(
         () => client.messages.create({
           model: MODEL,
-          max_tokens: 512,
+          max_tokens: 768,
           messages: [
             {
               role: 'user',
@@ -264,6 +277,7 @@ export async function scorePostings(
         scored_at: null,
         id: posting.id,
         reasoning: null,
+        description_snippet: null,
         hard_reqs_class: null,
         nice_to_haves_class: null,
         yoe_min: posting.yoe_min ?? null,
@@ -281,6 +295,7 @@ export async function scorePostings(
       scored_at: now,
       id: posting.id,
       reasoning: result.reasoning,
+      description_snippet: clampSnippet(result.description_snippet),
       hard_reqs_class: result.hard_reqs_class,
       nice_to_haves_class: result.nice_to_haves_class,
       yoe_min: result.yoe_min,
@@ -293,6 +308,14 @@ export async function scorePostings(
   }
 
   await Promise.all(candidates.map((p) => limit(() => scoreOne(p))))
+}
+
+function clampSnippet(s: string | null | undefined): string | null {
+  if (!s) return null
+  const trimmed = s.trim()
+  if (!trimmed) return null
+  if (trimmed.length <= MAX_SNIPPET_CHARS) return trimmed
+  return trimmed.slice(0, MAX_SNIPPET_CHARS - 1) + '…'
 }
 
 export async function scorePosting(
@@ -322,6 +345,7 @@ export async function scorePosting(
          affinity_scored_at  = @scored_at,
          affinity_skipped    = 0,
          affinity_reasoning  = @reasoning,
+         description_snippet = @description_snippet,
          hard_reqs_class     = @hard_reqs_class,
          nice_to_haves_class = @nice_to_haves_class,
          yoe_min             = @yoe_min,
@@ -363,11 +387,13 @@ export async function scorePosting(
     if (!validated.success) throw new Error('schema mismatch')
     const result = validated.data
     const score = computeAffinityScore(result.hard_reqs_class, result.nice_to_haves_class)
+    const description_snippet = clampSnippet(result.description_snippet)
     updatePosting.run({
       score,
       scored_at: now,
       id: posting.id,
       reasoning: result.reasoning,
+      description_snippet,
       hard_reqs_class: result.hard_reqs_class,
       nice_to_haves_class: result.nice_to_haves_class,
       yoe_min: result.yoe_min,
@@ -389,6 +415,7 @@ export async function scorePosting(
       affinity_scored_at: now,
       affinity_skipped: false,
       affinity_reasoning: result.reasoning,
+      description_snippet,
       hard_reqs_class: result.hard_reqs_class,
       nice_to_haves_class: result.nice_to_haves_class,
     }

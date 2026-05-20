@@ -133,6 +133,7 @@ export interface JobPosting {
   affinity_skipped: boolean
   affinity_scored_at: string | null
   affinity_reasoning: string | null
+  description_snippet: string | null
   hard_reqs_class: 'overqualified' | 'fully_qualified' | 'minimally_qualified' | 'underqualified' | null
   nice_to_haves_class: 'fully_met' | 'partially_met' | 'not_met' | null
   first_response_at: string | null

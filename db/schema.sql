@@ -121,6 +121,7 @@ CREATE TABLE IF NOT EXISTS job_postings (
   affinity_skipped    INTEGER NOT NULL DEFAULT 0,
   affinity_scored_at  TEXT,
   affinity_reasoning  TEXT,
+  description_snippet TEXT,        -- verbatim ~400-char role-summary excerpt from raw_text (extracted by scoring LLM)
   first_response_at   TEXT,
   last_seen_at        TEXT NOT NULL,
   salary_min          INTEGER,    -- annual USD

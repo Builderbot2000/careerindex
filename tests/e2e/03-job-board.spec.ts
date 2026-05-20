@@ -38,11 +38,11 @@ test.describe('Job Board & Ranking Module', () => {
     expect(title).toMatch(/nice-to-haves|partially met/i)
   })
 
-  test('hovering a posting title shows the affinity reasoning tooltip', async ({ page }) => {
+  test('hovering a posting title shows the job description snippet tooltip', async ({ page }) => {
     const firstTitle = page.getByRole('link', { name: /engineer|developer/i }).first()
       .or(page.getByText(/Senior Backend Engineer/i).first())
     await firstTitle.hover()
-    await expect(page.getByText(/match on backend systems|reasoning/i)).toBeVisible({ timeout: 5_000 })
+    await expect(page.getByRole('tooltip')).toContainText(/hiring a Senior Backend Engineer|distributed systems/i, { timeout: 5_000 })
   })
 
   test('hard filter by YOE excludes postings outside the user range', async ({ page }) => {
