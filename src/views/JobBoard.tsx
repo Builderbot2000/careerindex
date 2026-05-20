@@ -364,10 +364,13 @@ export default function JobBoard({ onNavigateToResume }: JobBoardProps): React.R
                                     onClick={(e) => e.preventDefault()}
                                     style={{ textDecoration: 'none', color: 'inherit' }}
                                     onMouseEnter={(e) => {
-                                        if (!posting.affinity_reasoning) return
+                                        if (!posting.raw_text) return
                                         if (tooltipTimer.current) clearTimeout(tooltipTimer.current)
                                         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-                                        setTooltip({ x: rect.left, y: rect.bottom + 6, text: posting.affinity_reasoning })
+                                        const snippet = posting.raw_text.length > 600
+                                            ? posting.raw_text.slice(0, 600) + '…'
+                                            : posting.raw_text
+                                        setTooltip({ x: rect.left, y: rect.bottom + 6, text: snippet })
                                     }}
                                     onMouseLeave={() => {
                                         tooltipTimer.current = setTimeout(() => setTooltip(null), 200)
@@ -508,7 +511,10 @@ export default function JobBoard({ onNavigateToResume }: JobBoardProps): React.R
                         padding: '6px 10px',
                         borderRadius: '6px',
                         fontSize: '0.8rem',
-                        maxWidth: '320px',
+                        maxWidth: '420px',
+                        maxHeight: '300px',
+                        overflow: 'hidden',
+                        whiteSpace: 'pre-wrap',
                         zIndex: 9999,
                         pointerEvents: 'none',
                         boxShadow: '0 2px 8px rgba(0,0,0,0.3)',

@@ -249,6 +249,18 @@ contextBridge.exposeInMainWorld('api', {
     return ipcRenderer.invoke('tracker:get-postings')
   },
 
+  listArchivedTrackerPostings() {
+    return ipcRenderer.invoke('tracker:list-archived')
+  },
+
+  getTrackerArchivedCount(): Promise<number> {
+    return ipcRenderer.invoke('tracker:archived-count')
+  },
+
+  deleteAllTrackerArchived(): Promise<number> {
+    return ipcRenderer.invoke('tracker:delete-all-archived')
+  },
+
   // ── Analytics ──────────────────────────────────────────────────────────────
   getAnalyticsFunnel() {
     return ipcRenderer.invoke('analytics:funnel')

@@ -402,6 +402,9 @@ export interface ElectronAPI {
 
   // Tracker
   getTrackerPostings(): Promise<TrackerPosting[]>
+  listArchivedTrackerPostings(): Promise<TrackerPosting[]>
+  getTrackerArchivedCount(): Promise<number>
+  deleteAllTrackerArchived(): Promise<number>
 
   // Analytics
   getAnalyticsFunnel(): Promise<FunnelSummary>
