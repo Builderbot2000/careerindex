@@ -21,6 +21,13 @@ import { registerJobsHandlers } from './handlers/jobs'
 import { registerTrackerHandlers } from './handlers/tracker'
 import { registerAnalyticsHandlers } from './handlers/analytics'
 import { registerBackupHandlers } from './handlers/backup'
+import {
+  initAutoUpdater,
+  checkForUpdates,
+  downloadUpdate,
+  quitAndInstall,
+  getLastUpdateStatus,
+} from './updater'
 
 const isDev = process.env.NODE_ENV === 'development'
 
@@ -312,6 +319,20 @@ function registerIpcHandlers(appRoot: string): void {
     })
   })
 
+  ipcMain.handle('updates:check', async () => {
+    await checkForUpdates()
+  })
+
+  ipcMain.handle('updates:download', async () => {
+    await downloadUpdate()
+  })
+
+  ipcMain.handle('updates:quit-and-install', () => {
+    quitAndInstall()
+  })
+
+  ipcMain.handle('updates:get-status', () => getLastUpdateStatus())
+
   ipcMain.handle('startup:clear-claude-quota-lock', async () => {
     const ok = await probeClaudeConnectivity()
     pushFeatureLocks({
@@ -426,9 +447,18 @@ app.whenReady().then(async () => {
   currentFeatureLocks = result.featureLocks
   mainWindow = createWindow()
 
+  initAutoUpdater(() => mainWindow)
+
   // Push feature lock state to renderer once its IPC listener is ready
   mainWindow.webContents.once('did-finish-load', () => {
     mainWindow?.webContents.send('startup:feature-locks', result.featureLocks)
+    // Auto-check for updates shortly after launch. Skipped in dev (broadcasts
+    // a friendly error) and in test mode to keep e2e runs deterministic.
+    if (process.env.APP_TEST !== '1') {
+      setTimeout(() => {
+        checkForUpdates().catch((e) => logger.warn('Update check failed', { error: String(e) }))
+      }, 3000)
+    }
   })
 })
 

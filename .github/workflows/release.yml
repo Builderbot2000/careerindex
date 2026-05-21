@@ -55,7 +55,19 @@ jobs:
       - name: Build app + adapters
         run: npm run build
 
-      - name: Package
+      # On tag push: publish directly to the GitHub release so electron-updater
+      # gets the latest*.yml metadata + installers + .blockmap delta files in
+      # the same release. electron-builder creates a draft release on first
+      # upload and subsequent matrix jobs append to it.
+      - name: Package and publish (tagged release)
+        if: startsWith(github.ref, 'refs/tags/')
+        run: npx electron-builder ${{ matrix.args }} --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # workflow_dispatch / non-tag runs: build only, no publish.
+      - name: Package (no publish)
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         run: npx electron-builder ${{ matrix.args }} --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -68,16 +80,6 @@ jobs:
             dist/*.AppImage
             dist/*.deb
             dist/*.exe
+            dist/*.blockmap
             dist/latest*.yml
           if-no-files-found: error
-
-      - name: Publish to GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            dist/*.AppImage
-            dist/*.deb
-            dist/*.exe
-            dist/latest*.yml
-          fail_on_unmatched_files: false

@@ -324,11 +324,25 @@ export interface FeatureLocks {
   profileEmpty: boolean
 }
 
+export type UpdateStatus =
+  | { state: 'idle' }
+  | { state: 'checking' }
+  | { state: 'available'; version: string }
+  | { state: 'not-available'; version: string }
+  | { state: 'downloading'; percent: number }
+  | { state: 'downloaded'; version: string }
+  | { state: 'error'; message: string; disabledInDev?: boolean }
+
 /** Shape of window.api as exposed by the context bridge. */
 export interface ElectronAPI {
   onFeatureLocks(cb: (locks: FeatureLocks) => void): void
   refreshFeatureLocks(): Promise<void>
   clearClaudeQuotaLock(): Promise<void>
+  checkForUpdates(): Promise<void>
+  downloadUpdate(): Promise<void>
+  quitAndInstallUpdate(): Promise<void>
+  getUpdateStatus(): Promise<UpdateStatus>
+  onUpdateStatus(cb: (status: UpdateStatus) => void): void
   getSettings(): Promise<Settings>
   updateSetting(key: SettingKey, value: Settings[SettingKey]): Promise<void>
   getApiKeyPresent(): Promise<boolean>

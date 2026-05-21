@@ -52,6 +52,27 @@ body {
   padding: 0 16px 12px;
 }
 
+.sidebar-update-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: calc(100% - 16px);
+  margin: 0 8px 12px;
+  padding: 6px 10px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 11px;
+  text-align: left;
+  transition: background 0.1s, color 0.1s;
+}
+.sidebar-update-btn:hover {
+  background: rgba(255,255,255,.05);
+  color: var(--text);
+}
+
 .nav-btn {
   display: flex;
   align-items: center;

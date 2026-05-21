@@ -20,6 +20,7 @@ import type {
   WorkType,
   SearchTermSeniority,
   Recency,
+  UpdateStatus,
 } from '../src/shared/ipc-types'
 
 contextBridge.exposeInMainWorld('api', {
@@ -34,6 +35,27 @@ contextBridge.exposeInMainWorld('api', {
 
   clearClaudeQuotaLock(): Promise<void> {
     return ipcRenderer.invoke('startup:clear-claude-quota-lock')
+  },
+
+  // ── Updates ────────────────────────────────────────────────────────────────
+  checkForUpdates(): Promise<void> {
+    return ipcRenderer.invoke('updates:check')
+  },
+
+  downloadUpdate(): Promise<void> {
+    return ipcRenderer.invoke('updates:download')
+  },
+
+  quitAndInstallUpdate(): Promise<void> {
+    return ipcRenderer.invoke('updates:quit-and-install')
+  },
+
+  getUpdateStatus(): Promise<UpdateStatus> {
+    return ipcRenderer.invoke('updates:get-status')
+  },
+
+  onUpdateStatus(cb: (status: UpdateStatus) => void): void {
+    ipcRenderer.on('updates:status', (_event, status: UpdateStatus) => cb(status))
   },
 
   // ── Settings ───────────────────────────────────────────────────────────────

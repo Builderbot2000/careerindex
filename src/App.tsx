@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import type { FeatureLocks, JobPosting, AdapterProgress, CaptchaRequest, LoginRequest } from './shared/ipc-types'
+import type { FeatureLocks, JobPosting, AdapterProgress, CaptchaRequest, LoginRequest, UpdateStatus } from './shared/ipc-types'
 import Settings from './views/Settings'
 import Profile from './views/Profile'
 import SearchConfig from './views/SearchConfig'
@@ -10,6 +10,7 @@ import Analytics from './views/Analytics'
 import { ChromiumInstallModal } from './components/ChromiumInstallModal'
 import { ResumeLockedModal } from './components/ResumeLockedModal'
 import { ClaudeQuotaLockedModal } from './components/ClaudeQuotaLockedModal'
+import { UpdateModal } from './components/UpdateModal'
 
 export type ScrapeState = 'idle' | 'running' | 'paused' | 'error'
 
@@ -49,6 +50,8 @@ export default function App(): React.ReactElement {
     const [captchaQueue, setCaptchaQueue] = useState<CaptchaRequest[]>([])
     const [loginQueue, setLoginQueue] = useState<LoginRequest[]>([])
     const [lockedNav, setLockedNav] = useState<View | null>(null)
+    const [updateStatus, setUpdateStatus] = useState<UpdateStatus>({ state: 'idle' })
+    const [updateModalOpen, setUpdateModalOpen] = useState(false)
 
     useEffect(() => {
         window.api.onFeatureLocks((locks) => setFeatureLocks(locks))
@@ -61,7 +64,22 @@ export default function App(): React.ReactElement {
         window.api.onLoginRequired((req) => {
             setLoginQueue((q) => [...q, req])
         })
+        window.api.onUpdateStatus((status) => {
+            setUpdateStatus(status)
+            // Auto-open the modal when something actionable happens (an update was
+            // found or finished downloading). Stay quiet on background "checking"
+            // and "not-available" so the silent launch check doesn't interrupt.
+            if (status.state === 'available' || status.state === 'downloaded') {
+                setUpdateModalOpen(true)
+            }
+        })
+        window.api.getUpdateStatus().then((s) => setUpdateStatus(s)).catch(() => undefined)
     }, [])
+
+    function handleManualUpdateCheck(): void {
+        setUpdateModalOpen(true)
+        window.api.checkForUpdates().catch(console.error)
+    }
 
     async function runScrape(adapterIds: string[], loginAdapterIds: string[]): Promise<void> {
         setScrapeState('running')
@@ -121,6 +139,17 @@ export default function App(): React.ReactElement {
         <div className="app-shell">
             <nav className="sidebar">
                 <div className="sidebar-title">CareerIndex</div>
+                <button
+                    type="button"
+                    className="sidebar-update-btn"
+                    onClick={handleManualUpdateCheck}
+                    title="Check for updates"
+                >
+                    Check for updates
+                    {(updateStatus.state === 'available' || updateStatus.state === 'downloaded') && (
+                        <span className="pending-badge" title="Update ready" />
+                    )}
+                </button>
                 {NAV.map((item) => {
                     const locked = isLocked(item)
                     return (
@@ -186,6 +215,15 @@ export default function App(): React.ReactElement {
                     featureLocks={featureLocks}
                     onClose={() => setLockedNav(null)}
                     onNavigate={(v) => { setLockedNav(null); navigate(v) }}
+                />
+            )}
+            {updateModalOpen && (
+                <UpdateModal
+                    status={updateStatus}
+                    onClose={() => setUpdateModalOpen(false)}
+                    onCheckAgain={() => window.api.checkForUpdates().catch(console.error)}
+                    onDownload={() => window.api.downloadUpdate().catch(console.error)}
+                    onRestart={() => window.api.quitAndInstallUpdate().catch(console.error)}
                 />
             )}
         </div>

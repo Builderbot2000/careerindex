@@ -1,6 +1,6 @@
 {
   "name": "careerindex",
-  "version": "1.3.4",
+  "version": "1.3.5",
   "description": "Local-first job hunting desktop app",
   "author": "Kevin Tang <kevintang1118@outlook.com>",
   "main": "out/main/index.js",
@@ -55,7 +55,9 @@
     "appId": "com.careerindex.app",
     "productName": "CareerIndex",
     "publish": {
-      "provider": "github"
+      "provider": "github",
+      "owner": "Builderbot2000",
+      "repo": "careerindex"
     },
     "directories": {
       "output": "dist"
