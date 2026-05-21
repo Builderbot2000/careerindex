@@ -539,6 +539,28 @@ export function IntentTab({
             {/* Adapter + scrape */}
             <section>
                 <h3 style={{ marginTop: 0, marginBottom: '12px', fontSize: '1rem' }}>Run Scrape</h3>
+                <div
+                    role="alert"
+                    style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '10px',
+                        padding: '10px 12px',
+                        marginBottom: '12px',
+                        background: '#fef3c7',
+                        border: '1px solid #fcd34d',
+                        borderRadius: '6px',
+                        fontSize: '0.85rem',
+                        color: '#78350f',
+                        lineHeight: 1.4,
+                    }}
+                >
+                    <span aria-hidden="true" style={{ fontSize: '1rem', lineHeight: 1 }}>⚠</span>
+                    <span>
+                        <strong>Turn off your VPN before running a scrape.</strong> Job sites
+                        flag VPN exit nodes and will block the crawl with repeated CAPTCHAs.
+                    </span>
+                </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
                     {adapters.map((adapter) => (
                         <div
