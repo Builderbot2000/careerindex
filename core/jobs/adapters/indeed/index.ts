@@ -33,14 +33,59 @@ const RECENCY_MAP: Record<string, string> = {
   month: '30',
 }
 
+/**
+ * Maps country names (and common aliases) to Indeed's country-specific host.
+ * When the user types a country as the location, we route the search to the
+ * matching subdomain instead of www.indeed.com — otherwise Indeed shows a
+ * cross-border banner ("Showing all jobs in the US. Do you want to see jobs
+ * in Canada only?") that blocks/hides results on the US domain.
+ */
+const COUNTRY_HOSTS: Record<string, string> = {
+  'canada': 'ca.indeed.com',
+  'united kingdom': 'uk.indeed.com',
+  'uk': 'uk.indeed.com',
+  'great britain': 'uk.indeed.com',
+  'australia': 'au.indeed.com',
+  'india': 'in.indeed.com',
+  'germany': 'de.indeed.com',
+  'france': 'fr.indeed.com',
+  'ireland': 'ie.indeed.com',
+  'netherlands': 'nl.indeed.com',
+  'spain': 'es.indeed.com',
+  'italy': 'it.indeed.com',
+  'singapore': 'sg.indeed.com',
+  'new zealand': 'nz.indeed.com',
+  'japan': 'jp.indeed.com',
+  'mexico': 'mx.indeed.com',
+  'brazil': 'br.indeed.com',
+  'united states': 'www.indeed.com',
+  'usa': 'www.indeed.com',
+  'us': 'www.indeed.com',
+}
+
+/**
+ * Returns the Indeed host and a normalized location string for a given filter.
+ * If the location is a recognized country, the country-specific subdomain is
+ * used and the `l` param is dropped (the host already scopes results to that
+ * country). Otherwise the default US host is used and the location is passed
+ * through as the `l` param.
+ */
+export function resolveHostAndLocation(location: string | undefined): { host: string; locationParam: string | undefined } {
+  if (!location) return { host: 'www.indeed.com', locationParam: undefined }
+  const host = COUNTRY_HOSTS[location.trim().toLowerCase()]
+  if (host) return { host, locationParam: undefined }
+  return { host: 'www.indeed.com', locationParam: location }
+}
+
 export function buildSearchUrl(term: string, filters: SearchFilters, start: number): string {
+  const { host, locationParam } = resolveHostAndLocation(filters.location)
   const params = new URLSearchParams()
   if (term) params.set('q', term)
-  if (filters.location) params.set('l', filters.location)
+  if (locationParam) params.set('l', locationParam)
   if (filters.recency && RECENCY_MAP[filters.recency]) params.set('fromage', RECENCY_MAP[filters.recency])
   if (filters.workTypes?.includes('remote')) params.set('remotejob', '1')
   params.set('start', String(start))
-  return `https://www.indeed.com/jobs?${params.toString()}`
+  return `https://${host}/jobs?${params.toString()}`
 }
 
 /**

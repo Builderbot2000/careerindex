@@ -65,6 +65,28 @@ describe('buildSearchUrl', () => {
     expect(url).toContain('remotejob=1')
     expect(url).toContain('start=10')
   })
+
+  it('routes country locations to the country-specific subdomain and drops the l param', () => {
+    const url = buildSearchUrl('engineer', { location: 'Canada' }, 0)
+    expect(url).toMatch(/^https:\/\/ca\.indeed\.com\/jobs\?/)
+    expect(url).not.toContain('l=')
+  })
+
+  it('is case-insensitive when matching country names', () => {
+    expect(buildSearchUrl('e', { location: 'canada' }, 0)).toContain('ca.indeed.com')
+    expect(buildSearchUrl('e', { location: 'CANADA' }, 0)).toContain('ca.indeed.com')
+  })
+
+  it('recognizes UK aliases', () => {
+    expect(buildSearchUrl('e', { location: 'UK' }, 0)).toContain('uk.indeed.com')
+    expect(buildSearchUrl('e', { location: 'United Kingdom' }, 0)).toContain('uk.indeed.com')
+  })
+
+  it('keeps city locations on the default US host with the l param', () => {
+    const url = buildSearchUrl('engineer', { location: 'Toronto, ON' }, 0)
+    expect(url).toMatch(/^https:\/\/www\.indeed\.com\/jobs\?/)
+    expect(url).toContain('l=Toronto%2C+ON')
+  })
 })
 
 // ─── parsePostedAt ────────────────────────────────────────────────────────────
