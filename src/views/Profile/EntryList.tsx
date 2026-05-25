@@ -11,11 +11,14 @@ interface EntryListProps {
     filter: FilterType
     statusMsg: string | null
     yoeInput: string
+    yoeComputed: number
+    yoeOverridden: boolean
     qualsIndustries: string[]
     qualsLanguages: LanguageItem[]
     qualsCitizenship: CitizenshipItem[]
     qualsDriversLicense: boolean
     pdfImporting: boolean
+    extracting: boolean
     setFilter: (f: FilterType) => void
     setYoeInput: (v: string) => void
     setQualsDriversLicense: (v: boolean) => void
@@ -26,7 +29,9 @@ interface EntryListProps {
     onAddCitizenship: (item: CitizenshipItem) => void
     onRemoveCitizenship: (index: number) => void
     onSaveYoe: () => void
+    onResetYoe: () => void
     onSaveQualifications: () => void
+    onExtractQualifications: () => void
     onAdd: () => void
     onEdit: (entry: ProfileEntry) => void
     onDelete: (id: string) => void
@@ -74,6 +79,7 @@ function GeneralSection({
     qualsLanguages,
     qualsCitizenship,
     qualsDriversLicense,
+    extracting,
     setQualsDriversLicense,
     onAddIndustry,
     onRemoveIndustry,
@@ -82,12 +88,13 @@ function GeneralSection({
     onAddCitizenship,
     onRemoveCitizenship,
     onSaveQualifications,
+    onExtractQualifications,
 }: Pick<
     EntryListProps,
     'qualsIndustries' | 'qualsLanguages' | 'qualsCitizenship' | 'qualsDriversLicense' |
-    'setQualsDriversLicense' | 'onAddIndustry' | 'onRemoveIndustry' |
+    'extracting' | 'setQualsDriversLicense' | 'onAddIndustry' | 'onRemoveIndustry' |
     'onAddLanguage' | 'onRemoveLanguage' | 'onAddCitizenship' | 'onRemoveCitizenship' |
-    'onSaveQualifications'
+    'onSaveQualifications' | 'onExtractQualifications'
 >): React.ReactElement {
     const [industryToAdd, setIndustryToAdd] = useState(INDUSTRIES[0])
     const [langToAdd, setLangToAdd] = useState(LANGUAGES[0])
@@ -111,9 +118,20 @@ function GeneralSection({
 
     return (
         <div className="card" data-testid="quals-card">
-            <div style={{ fontWeight: 600, marginBottom: 4 }}>General</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                <div style={{ fontWeight: 600 }}>General</div>
+                <button
+                    data-testid="quals-extract"
+                    className="btn"
+                    onClick={onExtractQualifications}
+                    disabled={extracting}
+                    title="Use AI to populate these fields from your profile entries"
+                >
+                    {extracting ? 'Extracting…' : 'Extract from profile'}
+                </button>
+            </div>
             <div style={{ fontSize: 12, color: 'var(--text-dim, #6b7280)', marginBottom: 16 }}>
-                Authoritative facts fed directly to the job evaluator.
+                Authoritative facts fed directly to the job evaluator. Extract auto-fills from your entries — review then Save.
             </div>
 
             {/* Industries */}
@@ -216,11 +234,14 @@ export function EntryList({
     filter,
     statusMsg,
     yoeInput,
+    yoeComputed,
+    yoeOverridden,
     qualsIndustries,
     qualsLanguages,
     qualsCitizenship,
     qualsDriversLicense,
     pdfImporting,
+    extracting,
     setFilter,
     setYoeInput,
     setQualsDriversLicense,
@@ -231,7 +252,9 @@ export function EntryList({
     onAddCitizenship,
     onRemoveCitizenship,
     onSaveYoe,
+    onResetYoe,
     onSaveQualifications,
+    onExtractQualifications,
     onAdd,
     onEdit,
     onDelete,
@@ -247,28 +270,42 @@ export function EntryList({
         <div>
             <h1>Profile</h1>
 
-            {/* YOE + data management row */}
+            {/* YOE input + data management row */}
             <div className="card">
                 <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                    <div style={{ flex: '1 1 200px' }}>
+                    <div style={{ flex: '1 1 240px' }}>
                         <div className="form-row" style={{ marginBottom: 0 }}>
                             <label htmlFor="profile-yoe">Years of experience</label>
-                            <div style={{ display: 'flex', gap: 8 }}>
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                                 <input
                                     id="profile-yoe"
                                     data-testid="profile-yoe-input"
                                     type="number"
                                     min={0}
                                     max={60}
+                                    step={0.1}
                                     value={yoeInput}
-                                    placeholder="e.g. 5"
                                     onChange={(e) => setYoeInput(e.target.value)}
                                     onKeyDown={(e) => { if (e.key === 'Enter') onSaveYoe() }}
                                     style={{ width: 90 }}
                                 />
                                 <button data-testid="profile-yoe-save" className="btn btn-primary" onClick={onSaveYoe}>Save</button>
+                                {yoeOverridden && (
+                                    <button
+                                        data-testid="profile-yoe-reset"
+                                        className="btn"
+                                        onClick={onResetYoe}
+                                        title={`Use computed value (${yoeComputed.toFixed(1)})`}
+                                    >
+                                        Reset to {yoeComputed.toFixed(1)}
+                                    </button>
+                                )}
                             </div>
-                            <div className="form-hint">Used for YOE hard filter in job matching.</div>
+                            <div className="form-hint">
+                                {yoeOverridden
+                                    ? `Override active. Computed from entries: ${yoeComputed.toFixed(1)} years.`
+                                    : `Computed from Experience entries. Edit this field to override.`}
+                            </div>
                         </div>
                     </div>
                     <div style={{ display: 'flex', gap: 8, paddingBottom: 20 }}>
@@ -328,6 +365,7 @@ export function EntryList({
                     qualsLanguages={qualsLanguages}
                     qualsCitizenship={qualsCitizenship}
                     qualsDriversLicense={qualsDriversLicense}
+                    extracting={extracting}
                     setQualsDriversLicense={setQualsDriversLicense}
                     onAddIndustry={onAddIndustry}
                     onRemoveIndustry={onRemoveIndustry}
@@ -336,6 +374,7 @@ export function EntryList({
                     onAddCitizenship={onAddCitizenship}
                     onRemoveCitizenship={onRemoveCitizenship}
                     onSaveQualifications={onSaveQualifications}
+                    onExtractQualifications={onExtractQualifications}
                 />
             )}
 

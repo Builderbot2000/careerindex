@@ -3,6 +3,8 @@ import { rowToPosting } from './adapters/base'
 import type { JobPosting, JobPostingRow } from './adapters/base'
 import { scorePostings } from './scorer'
 import type { QuotaErrorCallback } from '../llm/withQuotaGuard'
+import { computeYoeFromEntries } from '../profile/yoe'
+import { getAllEntries } from '../profile/repository'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -36,7 +38,7 @@ function applyHardFilters(
     keyword_match_fields: string[]
     excluded_stack: string[]
   },
-  userYoe: number | null,
+  userYoe: number,
 ): JobPosting[] {
   return postings.filter((p) => {
     // 1a — keyword filter
@@ -63,11 +65,9 @@ function applyHardFilters(
       if (!matchesRequired) return false
     }
 
-    // 1b — YOE filter
-    if (userYoe !== null) {
-      if (p.yoe_min !== null && userYoe < p.yoe_min) return false
-      if (p.yoe_max !== null && userYoe > p.yoe_max) return false
-    }
+    // 1b — YOE filter (computed from experience entries)
+    if (p.yoe_min !== null && userYoe < p.yoe_min) return false
+    if (p.yoe_max !== null && userYoe > p.yoe_max) return false
 
     // 1c — excluded stack
     if (config.excluded_stack.length > 0) {
@@ -133,7 +133,7 @@ type SearchConfig = {
 function loadConfig(db: Database.Database): {
   config: SearchConfig
   weights: Record<string, number>
-  userYoe: number | null
+  userYoe: number
 } {
   const configRow = db
     .prepare(
@@ -160,12 +160,7 @@ function loadConfig(db: Database.Database): {
     excluded_stack: parseJsonArray(configRow?.excluded_stack),
   }
 
-  const userYoe =
-    (
-      db
-        .prepare('SELECT yoe FROM user_profile WHERE id = 1')
-        .get() as { yoe: number | null } | undefined
-    )?.yoe ?? null
+  const userYoe = computeYoeFromEntries(getAllEntries(db))
 
   return { config, weights: parseWeights(configRow?.ranking_weights), userYoe }
 }

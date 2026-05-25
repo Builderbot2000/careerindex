@@ -105,12 +105,16 @@ contextBridge.exposeInMainWorld('api', {
     return ipcRenderer.invoke('profile:get-user')
   },
 
-  setUserYoe(yoe: number | null): Promise<void> {
-    return ipcRenderer.invoke('profile:set-yoe', yoe)
-  },
-
   setUserQualifications(quals: unknown): Promise<void> {
     return ipcRenderer.invoke('profile:set-qualifications', quals)
+  },
+
+  setUserYoeOverride(yoe: number | null): Promise<void> {
+    return ipcRenderer.invoke('profile:set-yoe-override', yoe)
+  },
+
+  extractQualifications() {
+    return ipcRenderer.invoke('profile:extract-qualifications')
   },
 
   exportProfileMarkdown(): Promise<string | null> {

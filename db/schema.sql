@@ -1,7 +1,7 @@
 -- schema.sql — Human-readable schema reference
 -- Source of truth is the migration files in db/migrations/
 -- This file is updated manually to reflect the current full schema.
--- Current as of: migration 018_applications_template_name
+-- Current as of: migration 023_structured_hard_reqs
 
 -- Migration tracking (internal)
 CREATE TABLE IF NOT EXISTS _migrations (
@@ -132,6 +132,7 @@ CREATE TABLE IF NOT EXISTS job_postings (
     CHECK(hard_reqs_class IN ('overqualified','fully_qualified','minimally_qualified','underqualified')),
   nice_to_haves_class TEXT
     CHECK(nice_to_haves_class IN ('fully_met','partially_met','not_met')),
+  hard_reqs_struct    TEXT,      -- JSON; structured hard requirements emitted by scoring LLM, evaluated deterministically by core/jobs/hardReqs.ts
   archived_at         TEXT       -- non-null = hidden from default JobBoard (auto-set by retention sweep)
 );
 

@@ -30,7 +30,12 @@ export interface CitizenshipItem {
 
 export interface UserProfile {
   id: number
-  yoe: number | null
+  /** Effective YOE used by gating and scoring: the override when set, else the computed value. */
+  yoe: number
+  /** YOE computed from experience entries, regardless of override. */
+  yoe_computed: number
+  /** User-set override; null means the computed value is in use. */
+  yoe_override: number | null
   yoe_industry: string[]
   languages: LanguageItem[]
   citizenship: CitizenshipItem[]
@@ -356,8 +361,9 @@ export interface ElectronAPI {
   updateProfileEntry(id: string, updates: UpdateProfileEntryInput): Promise<ProfileEntry>
   deleteProfileEntry(id: string): Promise<void>
   getUserProfile(): Promise<UserProfile>
-  setUserYoe(yoe: number | null): Promise<void>
   setUserQualifications(quals: UserQualificationsInput): Promise<void>
+  setUserYoeOverride(yoe: number | null): Promise<void>
+  extractQualifications(): Promise<{ qualifications: UserQualificationsInput }>
   exportProfileMarkdown(): Promise<string | null>
   importProfileMarkdown(): Promise<{ added: number; skipped: number } | null>
   importProfileFromResumePdf(): Promise<{ added: number; entries: ProfileEntry[] } | null>

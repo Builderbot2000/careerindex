@@ -9,13 +9,14 @@ import {
   updateEntry,
   deleteEntry,
   getUserProfile,
-  setUserYoe,
   setUserQualifications,
+  setUserYoeOverride,
   exportToMarkdown,
   importFromMarkdown,
   countWords,
 } from '../../core/profile/repository'
 import { importProfileFromResumePdf } from '../../core/profile/resumeImporter'
+import { extractQualifications } from '../../core/profile/qualsExtractor'
 import { CreateProfileEntrySchema, UpdateProfileEntrySchema, UserQualificationsSchema } from '../../core/profile/models'
 import { getSettings } from '../settings'
 import type { FeatureLocks, ClaudeQuotaLock } from '../../src/shared/ipc-types'
@@ -65,15 +66,31 @@ export function registerProfileHandlers(
 
   ipcMain.handle('profile:get-user', () => getUserProfile(getDb()))
 
-  ipcMain.handle('profile:set-yoe', (_event, yoe: unknown) => {
-    const val = yoe === null ? null : typeof yoe === 'number' ? Math.floor(yoe) : null
-    setUserYoe(getDb(), val)
-  })
-
   ipcMain.handle('profile:set-qualifications', (_event, input: unknown) => {
     const parsed = UserQualificationsSchema.safeParse(input)
     if (!parsed.success) throw new Error(parsed.error.message)
     setUserQualifications(getDb(), parsed.data)
+  })
+
+  ipcMain.handle('profile:set-yoe-override', (_event, yoe: unknown) => {
+    if (yoe === null) {
+      setUserYoeOverride(getDb(), null)
+      return
+    }
+    if (typeof yoe !== 'number' || !Number.isFinite(yoe) || yoe < 0) {
+      throw new Error('yoe must be a non-negative number or null')
+    }
+    setUserYoeOverride(getDb(), yoe)
+  })
+
+  ipcMain.handle('profile:extract-qualifications', async () => {
+    const lock = getClaudeQuotaLock()
+    if (lock) throw new Error(`Claude features locked (${lock.reason}) — clear in Settings`)
+    const apiKey = getApiKey()
+    if (!apiKey) throw new Error('No API key stored — set one in Settings first')
+    const result = await extractQualifications(getDb(), apiKey, triggerClaudeQuotaLock)
+    logger.info('Profile qualifications extracted', result.qualifications)
+    return result
   })
 
   ipcMain.handle('profile:export', async () => {

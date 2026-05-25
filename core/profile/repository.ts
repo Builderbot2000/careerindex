@@ -9,6 +9,7 @@ import type {
   UpdateProfileEntryInput,
   UserQualificationsInput,
 } from './models'
+import { computeYoeFromEntries } from './yoe'
 
 // ─── Row shapes from SQLite ───────────────────────────────────────────────────
 
@@ -107,11 +108,11 @@ export function deleteEntry(db: Database.Database, id: string): void {
 
 interface UserProfileRow {
   id: number
-  yoe: number | null
-  yoe_industry: string | null  // JSON string[]
-  languages: string | null     // JSON LanguageItem[]
-  citizenship: string | null   // JSON CitizenshipItem[]
-  drivers_license: number      // SQLite 0/1
+  yoe: number | null            // user-set override; when null, YOE is computed from entries
+  yoe_industry: string | null   // JSON string[]
+  languages: string | null      // JSON LanguageItem[]
+  citizenship: string | null    // JSON CitizenshipItem[]
+  drivers_license: number       // SQLite 0/1
 }
 
 function parseJsonArray<T>(raw: string | null): T[] {
@@ -121,9 +122,13 @@ function parseJsonArray<T>(raw: string | null): T[] {
 
 export function getUserProfile(db: Database.Database): UserProfile {
   const row = db.prepare('SELECT * FROM user_profile WHERE id = 1').get() as UserProfileRow
+  const yoe_computed = computeYoeFromEntries(getAllEntries(db))
+  const yoe = row.yoe !== null ? row.yoe : yoe_computed
   return {
     id: row.id,
-    yoe: row.yoe,
+    yoe,
+    yoe_computed,
+    yoe_override: row.yoe,
     yoe_industry: parseJsonArray<string>(row.yoe_industry),
     languages: parseJsonArray<LanguageItem>(row.languages),
     citizenship: parseJsonArray<CitizenshipItem>(row.citizenship),
@@ -131,7 +136,8 @@ export function getUserProfile(db: Database.Database): UserProfile {
   }
 }
 
-export function setUserYoe(db: Database.Database, yoe: number | null): void {
+/** Set or clear the manual YOE override. `null` reverts to the computed value. */
+export function setUserYoeOverride(db: Database.Database, yoe: number | null): void {
   db.prepare('UPDATE user_profile SET yoe = ? WHERE id = 1').run(yoe)
 }
 
@@ -182,7 +188,6 @@ export function exportToMarkdown(db: Database.Database): string {
 
   const lines: string[] = ['# Profile Export', '']
 
-  if (profile.yoe !== null) lines.push(`yoe: ${profile.yoe}`)
   if (profile.yoe_industry.length) lines.push(`yoe_industries: ${profile.yoe_industry.join(', ')}`)
   if (profile.languages.length) lines.push(`languages: ${profile.languages.map((l) => `${l.name} (${l.proficiency})`).join(', ')}`)
   if (profile.citizenship.length) lines.push(`citizenship: ${profile.citizenship.map((c) => `${c.country} — ${c.status}`).join('; ')}`)
@@ -220,10 +225,7 @@ export function importFromMarkdown(
   let added = 0
   let skipped = 0
 
-  // Extract optional header fields
-  const yoeMatch = markdown.match(/^yoe:\s*(\d+)/m)
-  if (yoeMatch) setUserYoe(db, parseInt(yoeMatch[1], 10))
-
+  // Extract optional header fields (yoe is no longer stored; computed from entries)
   const dlMatch = markdown.match(/^drivers_license:\s*(true|1)/mi)
   if (dlMatch) {
     const current = getUserProfile(db)

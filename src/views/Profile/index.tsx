@@ -24,6 +24,7 @@ export default function Profile(): React.ReactElement {
     const [formError, setFormError] = useState<string | null>(null)
     const [busy, setBusy] = useState(false)
     const [pdfImporting, setPdfImporting] = useState(false)
+    const [extracting, setExtracting] = useState(false)
     const [yoeInput, setYoeInput] = useState('')
     const [qualsIndustries, setQualsIndustries] = useState<string[]>([])
     const [qualsLanguages, setQualsLanguages] = useState<LanguageItem[]>([])
@@ -43,7 +44,7 @@ export default function Profile(): React.ReactElement {
         ])
         setEntries(ents)
         setUserProfile(profile)
-        setYoeInput(profile.yoe !== null ? String(profile.yoe) : '')
+        setYoeInput(profile.yoe.toFixed(1))
         setQualsIndustries(profile.yoe_industry)
         setQualsLanguages(profile.languages)
         setQualsCitizenship(profile.citizenship)
@@ -135,14 +136,45 @@ export default function Profile(): React.ReactElement {
 
     async function handleSaveYoe(): Promise<void> {
         const trimmed = yoeInput.trim()
-        const val = trimmed === '' ? null : parseInt(trimmed, 10)
-        if (trimmed !== '' && (isNaN(val as number) || (val as number) < 0)) {
-            flash('Years of experience must be a non-negative integer.')
+        if (trimmed === '') {
+            flash('Enter a number, or click Reset to use the computed value.')
             return
         }
-        await window.api.setUserYoe(val)
-        setUserProfile((prev) => prev ? { ...prev, yoe: val } : prev)
-        flash('YOE saved.')
+        const val = Number(trimmed)
+        if (!Number.isFinite(val) || val < 0) {
+            flash('Years of experience must be a non-negative number.')
+            return
+        }
+        await window.api.setUserYoeOverride(val)
+        const fresh = await window.api.getUserProfile()
+        setUserProfile(fresh)
+        setYoeInput(fresh.yoe.toFixed(1))
+        flash('YOE override saved.')
+    }
+
+    async function handleResetYoe(): Promise<void> {
+        await window.api.setUserYoeOverride(null)
+        const fresh = await window.api.getUserProfile()
+        setUserProfile(fresh)
+        setYoeInput(fresh.yoe.toFixed(1))
+        flash('YOE reset to computed value.')
+    }
+
+    async function handleExtractQualifications(): Promise<void> {
+        setExtracting(true)
+        try {
+            const result = await window.api.extractQualifications()
+            const q = result.qualifications
+            setQualsIndustries(q.yoe_industry)
+            setQualsLanguages(q.languages)
+            setQualsCitizenship(q.citizenship)
+            setQualsDriversLicense(q.drivers_license)
+            flash('Extracted from profile — review and Save General to keep.')
+        } catch (e) {
+            flash(`Extract failed: ${String(e)}`)
+        } finally {
+            setExtracting(false)
+        }
     }
 
     async function handleSaveQualifications(): Promise<void> {
@@ -231,11 +263,14 @@ export default function Profile(): React.ReactElement {
             filter={filter}
             statusMsg={statusMsg}
             yoeInput={yoeInput}
+            yoeComputed={userProfile?.yoe_computed ?? 0}
+            yoeOverridden={userProfile?.yoe_override !== null && userProfile?.yoe_override !== undefined}
             qualsIndustries={qualsIndustries}
             qualsLanguages={qualsLanguages}
             qualsCitizenship={qualsCitizenship}
             qualsDriversLicense={qualsDriversLicense}
             pdfImporting={pdfImporting}
+            extracting={extracting}
             setFilter={setFilter}
             setYoeInput={setYoeInput}
             setQualsDriversLicense={setQualsDriversLicense}
@@ -246,7 +281,9 @@ export default function Profile(): React.ReactElement {
             onAddCitizenship={handleAddCitizenship}
             onRemoveCitizenship={handleRemoveCitizenship}
             onSaveYoe={handleSaveYoe}
+            onResetYoe={handleResetYoe}
             onSaveQualifications={handleSaveQualifications}
+            onExtractQualifications={handleExtractQualifications}
             onAdd={openAdd}
             onEdit={openEdit}
             onDelete={handleDelete}

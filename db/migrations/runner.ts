@@ -21,6 +21,7 @@ import sql019 from './019_user_qualifications.sql?raw'
 import sql020 from './020_qualifications_v2.sql?raw'
 import sql021 from './021_job_postings_archived_at.sql?raw'
 import sql022 from './022_job_postings_description_snippet.sql?raw'
+import sql023 from './023_structured_hard_reqs.sql?raw'
 
 interface MigrationRecord {
   filename: string
@@ -49,6 +50,7 @@ const MIGRATIONS: ReadonlyArray<{ filename: string; sql: string }> = [
   { filename: '020_qualifications_v2.sql', sql: sql020 },
   { filename: '021_job_postings_archived_at.sql', sql: sql021 },
   { filename: '022_job_postings_description_snippet.sql', sql: sql022 },
+  { filename: '023_structured_hard_reqs.sql', sql: sql023 },
 ]
 
 export function runMigrations(

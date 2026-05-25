@@ -35,7 +35,12 @@ export type CitizenshipItem = z.infer<typeof CitizenshipItemSchema>
 
 export const UserProfileSchema = z.object({
   id: z.number(),
-  yoe: z.number().int().nonnegative().nullable(),
+  /** Effective YOE: the override when set, else the computed value. */
+  yoe: z.number().nonnegative(),
+  /** Always the computed value, regardless of override. */
+  yoe_computed: z.number().nonnegative(),
+  /** User-set override; null means "use computed". */
+  yoe_override: z.number().nullable(),
   yoe_industry: z.array(z.string()),
   languages: z.array(LanguageItemSchema),
   citizenship: z.array(CitizenshipItemSchema),
