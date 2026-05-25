@@ -71,13 +71,13 @@ const INSERT_SQL = `
     yoe_min, yoe_max, seniority, tech_stack, posted_at, applicant_count,
     raw_text, fetched_at, scraper_mod_version, status,
     affinity_score, affinity_skipped, affinity_scored_at, first_response_at, last_seen_at,
-    salary_min, salary_max, company_rating
+    salary_min, salary_max, company_rating, required_seniorities
   ) VALUES (
     @id, @source, @url, @resolved_domain, @title, @company, @location,
     @yoe_min, @yoe_max, @seniority, @tech_stack, @posted_at, @applicant_count,
     @raw_text, @fetched_at, @scraper_mod_version, @status,
     @affinity_score, @affinity_skipped, @affinity_scored_at, @first_response_at, @last_seen_at,
-    @salary_min, @salary_max, @company_rating
+    @salary_min, @salary_max, @company_rating, @required_seniorities
   )
 `
 
@@ -102,7 +102,10 @@ interface RunConstraints {
 function matchesRunConstraints(posting: Omit<JobPosting, 'id'>, run: RunConstraints): boolean {
   const locLower = posting.location.toLowerCase()
 
-  // Seniority: bypass when adapter couldn't determine seniority ('any')
+  // Seniority: drop only on a definite mismatch from the cheap regex
+  // pre-classifier. When the regex returns 'any' we defer the decision to the
+  // scoring LLM, which gets a second pass at filtering via required_seniorities
+  // stored on the posting (see scorer.ts).
   if (run.seniorities?.length && posting.seniority !== 'any') {
     if (!run.seniorities.includes(posting.seniority)) return false
   }
@@ -203,11 +206,16 @@ function processPosting(
   }
 
   // Insert
-  const full: JobPosting = { ...posting, id: randomUUID() } as JobPosting
+  const full: JobPosting = {
+    ...posting,
+    id: randomUUID(),
+    required_seniorities: runConstraints?.seniorities?.length ? runConstraints.seniorities : null,
+  } as JobPosting
   insert.run({
     ...full,
     tech_stack: JSON.stringify(full.tech_stack),
     affinity_skipped: full.affinity_skipped ? 1 : 0,
+    required_seniorities: full.required_seniorities ? JSON.stringify(full.required_seniorities) : null,
   })
 
   existingUrls.add(full.url)

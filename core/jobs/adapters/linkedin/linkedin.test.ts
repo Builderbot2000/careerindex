@@ -78,28 +78,28 @@ describe('parsePostedAt', () => {
   it('falls back to relative text when datetime attr is null', () => {
     const result = parsePostedAt(null, '3 days ago')
     const expected = new Date()
-    expected.setDate(expected.getDate() - 3)
+    expected.setUTCDate(expected.getUTCDate() - 3)
     expect(result).toBe(expected.toISOString().slice(0, 10))
   })
 
   it('parses "2 weeks ago"', () => {
     const result = parsePostedAt(null, '2 weeks ago')
     const expected = new Date()
-    expected.setDate(expected.getDate() - 14)
+    expected.setUTCDate(expected.getUTCDate() - 14)
     expect(result).toBe(expected.toISOString().slice(0, 10))
   })
 
   it('parses "1 month ago"', () => {
     const result = parsePostedAt(null, '1 month ago')
     const expected = new Date()
-    expected.setMonth(expected.getMonth() - 1)
+    expected.setUTCMonth(expected.getUTCMonth() - 1)
     expect(result).toBe(expected.toISOString().slice(0, 10))
   })
 
   it('parses "2 years ago"', () => {
     const result = parsePostedAt(null, '2 years ago')
     const expected = new Date()
-    expected.setFullYear(expected.getFullYear() - 2)
+    expected.setUTCFullYear(expected.getUTCFullYear() - 2)
     expect(result).toBe(expected.toISOString().slice(0, 10))
   })
 
@@ -109,8 +109,12 @@ describe('parsePostedAt', () => {
 
   it('falls back to text when datetime attr is invalid', () => {
     const result = parsePostedAt('invalid-date', '1 hour ago')
-    // Should be today's date (1 hour ago rounds to today)
-    expect(result).toBe(today)
+    // Compute the same way parsePostedAt does so the test stays correct when
+    // the current UTC time is within an hour of midnight (in which case
+    // "1 hour ago" rolls into the previous UTC day).
+    const expected = new Date()
+    expected.setUTCHours(expected.getUTCHours() - 1)
+    expect(result).toBe(expected.toISOString().slice(0, 10))
   })
 })
 

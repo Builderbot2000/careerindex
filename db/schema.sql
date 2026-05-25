@@ -1,7 +1,7 @@
 -- schema.sql — Human-readable schema reference
 -- Source of truth is the migration files in db/migrations/
 -- This file is updated manually to reflect the current full schema.
--- Current as of: migration 023_structured_hard_reqs
+-- Current as of: migration 024_posting_required_seniorities
 
 -- Migration tracking (internal)
 CREATE TABLE IF NOT EXISTS _migrations (
@@ -133,6 +133,7 @@ CREATE TABLE IF NOT EXISTS job_postings (
   nice_to_haves_class TEXT
     CHECK(nice_to_haves_class IN ('fully_met','partially_met','not_met')),
   hard_reqs_struct    TEXT,      -- JSON; structured hard requirements emitted by scoring LLM, evaluated deterministically by core/jobs/hardReqs.ts
+  required_seniorities TEXT,     -- JSON array of seniorities from the search term that fetched this posting; scorer archives the posting if the final seniority doesn't match
   archived_at         TEXT       -- non-null = hidden from default JobBoard (auto-set by retention sweep)
 );
 

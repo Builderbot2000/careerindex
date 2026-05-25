@@ -124,14 +124,17 @@ export function parsePostedAt(datetimeAttr: string | null, textContent: string):
   const unit = m[2]
   const d = new Date()
 
+  // Use UTC setters because we serialize back via toISOString() (UTC). Mixing
+  // local setters with a UTC serializer produces off-by-one days near midnight
+  // when local time and UTC are in the same day boundary region.
   switch (unit) {
-    case 'second': d.setSeconds(d.getSeconds() - n); break
-    case 'minute': d.setMinutes(d.getMinutes() - n); break
-    case 'hour':   d.setHours(d.getHours() - n); break
-    case 'day':    d.setDate(d.getDate() - n); break
-    case 'week':   d.setDate(d.getDate() - n * 7); break
-    case 'month':  d.setMonth(d.getMonth() - n); break
-    case 'year':   d.setFullYear(d.getFullYear() - n); break
+    case 'second': d.setUTCSeconds(d.getUTCSeconds() - n); break
+    case 'minute': d.setUTCMinutes(d.getUTCMinutes() - n); break
+    case 'hour':   d.setUTCHours(d.getUTCHours() - n); break
+    case 'day':    d.setUTCDate(d.getUTCDate() - n); break
+    case 'week':   d.setUTCDate(d.getUTCDate() - n * 7); break
+    case 'month':  d.setUTCMonth(d.getUTCMonth() - n); break
+    case 'year':   d.setUTCFullYear(d.getUTCFullYear() - n); break
   }
 
   return d.toISOString().slice(0, 10)
@@ -163,13 +166,21 @@ export function extractYoe(text: string): { yoe_min: number | null; yoe_max: num
   return { yoe_min: null, yoe_max: null }
 }
 
+/**
+ * Cheap pre-classification from title/body keywords. Used as a hint only —
+ * the scoring LLM is the canonical authority and is expected to overwrite
+ * 'any' (and may correct any other value too). Keep patterns conservative:
+ * we'd rather return 'any' and let the model decide than mislabel and
+ * silently leak postings past a seniority filter.
+ */
 export function extractSeniority(title: string, rawText: string): Seniority {
   const combined = `${title} ${rawText}`.toLowerCase()
-  if (/\bintern\b/.test(combined)) return 'intern'
-  if (/\bjunior\b|\bentry[\s-]level\b|\bjr\.?\b/.test(combined)) return 'junior'
-  if (/\bstaff\b|\bprincipal\b|\bdistinguished\b/.test(combined)) return 'staff'
+
+  if (/\bintern(ship)?\b|\bco-?op\b/.test(combined)) return 'intern'
+  if (/\bjunior\b|\bentry[\s-]level\b|\bjr\.?\b|\bnew\s+grad\b/.test(combined)) return 'junior'
+  if (/\bstaff\b|\bprincipal\b|\bdistinguished\b|\bfellow\b/.test(combined)) return 'staff'
   if (/\bsenior\b|\bsr\.?\b/.test(combined)) return 'senior'
-  if (/\bmid[\s-]level\b|\bintermediate\b/.test(combined)) return 'mid'
+  if (/\bmid[\s-]?level\b|\bintermediate\b/.test(combined)) return 'mid'
   return 'any'
 }
 

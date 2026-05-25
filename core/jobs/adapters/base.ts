@@ -51,6 +51,7 @@ export const JobPostingSchema = z.object({
   salary_max: z.number().int().nullable(),
   company_rating: z.number().nullable(),
   archived_at: z.string().nullable().optional(),
+  required_seniorities: z.array(SenioritySchema).nullable().optional(),
 })
 
 export type JobPosting = z.infer<typeof JobPostingSchema>
@@ -89,9 +90,17 @@ export interface JobPostingRow {
   company_rating: number | null
   applied_at?: string | null
   archived_at?: string | null
+  required_seniorities?: string | null  // JSON array
 }
 
 export function rowToPosting(row: JobPostingRow): JobPosting {
+  let required_seniorities: Seniority[] | null = null
+  if (row.required_seniorities) {
+    try {
+      const parsed = JSON.parse(row.required_seniorities) as unknown
+      if (Array.isArray(parsed)) required_seniorities = parsed as Seniority[]
+    } catch { /* leave null */ }
+  }
   return {
     ...row,
     seniority: row.seniority as Seniority,
@@ -100,6 +109,7 @@ export function rowToPosting(row: JobPostingRow): JobPosting {
     affinity_skipped: row.affinity_skipped === 1,
     hard_reqs_class: row.hard_reqs_class as JobPosting['hard_reqs_class'],
     nice_to_haves_class: row.nice_to_haves_class as JobPosting['nice_to_haves_class'],
+    required_seniorities,
   }
 }
 

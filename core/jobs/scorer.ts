@@ -131,7 +131,7 @@ Return ONLY a valid JSON object — no markdown, no commentary:
 
 {
   "posting_id": "${postingId}",
-  "seniority": "<intern|junior|mid|senior|staff|any — inferred from the posting>",
+  "seniority": "<intern|junior|mid|senior|staff|any — your best judgement; use 'any' only when the posting truly does not signal a level. Prefer guessing from years-of-experience (0–1 = intern, 1–3 = junior, 3–6 = mid, 6–10 = senior, 10+ = staff) and title cues (e.g. Engineer I = junior, II = mid, III/IV = senior, V+ = staff). Do NOT default to 'any' just because no explicit keyword is present.>",
   "tech_stack": [<lowercase technologies mentioned in the posting>],
   "salary_min": <annual USD integer or null>,
   "salary_max": <annual USD integer or null>,
@@ -363,6 +363,19 @@ function applyResult(
     salary_min: result.salary_min,
     salary_max: result.salary_max,
   })
+
+  // Honour the search term's seniority restriction now that we have the LLM's
+  // (more reliable) classification. Archive any posting whose final seniority
+  // is outside the requested set — only when we have a confident seniority.
+  if (
+    posting.required_seniorities &&
+    posting.required_seniorities.length > 0 &&
+    result.seniority !== 'any' &&
+    !posting.required_seniorities.includes(result.seniority)
+  ) {
+    db.prepare('UPDATE job_postings SET archived_at = ? WHERE id = ?')
+      .run(now, posting.id)
+  }
 
   return {
     ...posting,
